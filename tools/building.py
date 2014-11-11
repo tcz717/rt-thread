@@ -27,11 +27,9 @@ class Win32Spawn:
 
         newargs = string.join(args[1:], ' ')
         cmdline = cmd + " " + newargs
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
         # Make sure the env is constructed by strings
-        _e = {k: str(v) for k, v in env.items()}
+        _e = dict([(k, str(v)) for k, v in env.items()])
 
         # Windows(tm) CreateProcess does not use the env passed to it to find
         # the executables. So we have to modify our own PATH to make Popen
@@ -40,8 +38,7 @@ class Win32Spawn:
         os.environ['PATH'] = _e['PATH']
 
         try:
-            proc = subprocess.Popen(cmdline, env=_e,
-                    startupinfo=startupinfo, shell=False)
+            proc = subprocess.Popen(cmdline, env=_e, shell=False)
         except Exception as e:
             print 'Error in calling:\n%s' % cmdline
             print 'Exception: %s: %s' % (e, os.strerror(e.errno))
@@ -440,12 +437,6 @@ def DoBuilding(target, objects):
 
                 break
     else:
-        # merge the repeated items in the Env
-        if Env.has_key('CPPPATH')   : Env['CPPPATH'] = list(set(Env['CPPPATH']))
-        if Env.has_key('CPPDEFINES'): Env['CPPDEFINES'] = list(set(Env['CPPDEFINES']))
-        if Env.has_key('LIBPATH')   : Env['LIBPATH'] = list(set(Env['LIBPATH']))
-        if Env.has_key('LIBS')      : Env['LIBS'] = list(set(Env['LIBS']))
-
         program = Env.Program(target, objects)
 
     EndBuilding(target, program)
@@ -504,6 +495,9 @@ def EndBuilding(target, program = None):
         CscopeDatabase(Projects)
 
 def SrcRemove(src, remove):
+    if not src:
+        return
+
     if type(src[0]) == type('str'):
         for item in src:
             if os.path.basename(item) in remove:
